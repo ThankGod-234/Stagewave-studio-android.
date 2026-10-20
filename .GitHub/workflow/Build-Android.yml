@@ -1,0 +1,52 @@
+name: Build StageWave Studio Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'StageWaveStudio-Android-Starter.zip'
+      - '.github/workflows/build-android.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+
+      - name: Unpack Android starter project
+        run: |
+          test -f StageWaveStudio-Android-Starter.zip
+          mkdir project
+          unzip -q StageWaveStudio-Android-Starter.zip -d project
+
+      - name: Build debug APK
+        run: gradle -p project assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: StageWaveStudio-debug-apk
+          path: project/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
